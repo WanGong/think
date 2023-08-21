@@ -1,6 +1,7 @@
 import requests
 from email.message import EmailMessage
 import smtplib
+import os
 
 
 def getIp():
@@ -21,11 +22,30 @@ def send(msg, sender, recipient, pwd):
     smtp.quit()
 
 
+def getLastIp(path="/tmp/ip"):
+    res = ""
+    if os.path.exists(path):
+        with open(path) as f:
+            return f.read()
+    return res
+
+
+def updateIp(cur_ip, path="/tmp/ip"):
+    with open(path, "w") as f:
+        f.write(cur_ip)
+
+
 if __name__ == "__main__":
-    sender = "xxx@outlook.com"
+    sender = "xxxx@outlook.com"
     recipient = "xxx@qq.com"
     pwd = "xxx"
 
-    response = getIp()
-    msg = f"code: {response.status_code}, ip: {response.text}"
-    send(msg, sender, recipient, pwd)
+    cur_ip = getIp().text
+    last_ip = getLastIp()
+
+    if cur_ip != last_ip:
+        print(f"cur ip: {cur_ip}, last ip: {last_ip}")
+        send(cur_ip, sender, recipient, pwd)
+        updateIp(cur_ip)
+    else:
+        print("ip not changed")
