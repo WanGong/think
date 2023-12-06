@@ -60,8 +60,15 @@ class AnnotatedCursor(Cursor):
 
     """
 
-    def __init__(self, line, numberformat="{0:.4g};{1:.4g}", offset=(5, 5),
-                 dataaxis='x', textprops=None, **cursorargs):
+    def __init__(
+        self,
+        line,
+        numberformat="{0:.4g};{1:.4g}",
+        offset=(5, 5),
+        dataaxis="x",
+        textprops=None,
+        **cursorargs,
+    ):
         if textprops is None:
             textprops = {}
         # The line object, for which the coordinates are displayed
@@ -86,7 +93,9 @@ class AnnotatedCursor(Cursor):
             self.ax.get_ybound()[0],
             "0, 0",
             animated=bool(self.useblit),
-            visible=False, **textprops)
+            visible=False,
+            **textprops,
+        )
         # The position at which the cursor was last drawn
         self.lastdrawnplotpoint = None
 
@@ -214,17 +223,18 @@ class AnnotatedCursor(Cursor):
 
         # The dataaxis attribute decides, in which axis we look up which cursor
         # coordinate.
-        if self.dataaxis == 'x':
+        if self.dataaxis == "x":
             pos = xpos
             data = xdata
             lim = self.ax.get_xlim()
-        elif self.dataaxis == 'y':
+        elif self.dataaxis == "y":
             pos = ypos
             data = ydata
             lim = self.ax.get_ylim()
         else:
-            raise ValueError(f"The data axis specifier {self.dataaxis} should "
-                             f"be 'x' or 'y'")
+            raise ValueError(
+                f"The data axis specifier {self.dataaxis} should " f"be 'x' or 'y'"
+            )
 
         # If position is valid and in valid plot data range.
         if pos is not None and lim[0] <= pos <= lim[-1]:
@@ -268,34 +278,29 @@ class AnnotatedCursor(Cursor):
             super()._update()
 
 
-
-max_val = 200
-
-
 # The parametrized function to be plotted
-def cal(t, min_val, ratio, sub=30):
+def cal(time, val, ratio):
     res = []
     cur = 0
-    for i in t:
-        add = max(min_val, max_val - 10 * i)
-        cur = cur + int(cur * ratio) + add - sub
+    for i in range(time):
+        cur = cur * (1 + ratio) + val
         res.append(cur)
 
     return res
 
 
-t = [i for i in range(20)]
+time = [i for i in range(40)]
 
 # Define initial parameters
 init_ratio = 0.05
-init_min_salary = 100
+init_min_salary = 150
 
 # Create the figure and the line that we will manipulate
 fig, ax = plt.subplots()
-(line,) = ax.plot(t, cal(t, init_min_salary, init_ratio), lw=2)
+(line,) = ax.plot(time, cal(len(time), init_min_salary, init_ratio), lw=2)
 ax.set_xlabel("ith Year")
-plt.xlim([0, 20])
-plt.ylim([0, 8000])
+plt.xlim([0, 40])
+plt.ylim([0, 20000])
 plt.grid()
 
 # adjust the main plot to make room for the sliders
@@ -305,9 +310,9 @@ fig.subplots_adjust(left=0.25, bottom=0.25)
 axsalary = fig.add_axes([0.25, 0.1, 0.65, 0.03])
 salary_slider = Slider(
     ax=axsalary,
-    label="min_salary",
-    valmin=80,
-    valmax=200,
+    label="min_salary (w)",
+    valmin=50,
+    valmax=300,
     valstep=5,
     valinit=init_min_salary,
 )
@@ -316,10 +321,10 @@ salary_slider = Slider(
 axratio = fig.add_axes([0.1, 0.25, 0.0225, 0.63])
 ratio_slider = Slider(
     ax=axratio,
-    label="ratio",
-    valmin=0.01,
-    valmax=0.15,
-    valstep=0.005,
+    label="ratio (%)",
+    valmin=0,
+    valmax=20,
+    valstep=1,
     valinit=init_ratio,
     orientation="vertical",
 )
@@ -327,7 +332,7 @@ ratio_slider = Slider(
 
 # The function to be called anytime a slider's value changes
 def update(val):
-    line.set_ydata(cal(t, salary_slider.val, ratio_slider.val))
+    line.set_ydata(cal(len(time), salary_slider.val, ratio_slider.val / 100))
     fig.canvas.draw_idle()
 
 
