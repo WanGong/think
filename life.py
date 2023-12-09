@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.widgets import Slider, Button, Cursor
+from matplotlib.widgets import Slider, Button, Cursor, TextBox
 from matplotlib.backend_bases import MouseEvent
 
 from matplotlib.widgets import Cursor
@@ -279,12 +279,12 @@ class AnnotatedCursor(Cursor):
 
 
 # The parametrized function to be plotted
-def cal(time, val, ratio):
-    res = []
-    cur = 0
-    for i in range(time):
+def cal(time, val, ratio, init):
+    res = [init]
+    cur = init
+    for _ in range(time - 1):
         cur = cur * (1 + ratio) + val
-        res.append(cur)
+        res.append(int(cur))
 
     return res
 
@@ -294,10 +294,11 @@ time = [i for i in range(40)]
 # Define initial parameters
 init_ratio = 0.05
 init_min_salary = 150
+init_val = 0
 
 # Create the figure and the line that we will manipulate
 fig, ax = plt.subplots()
-(line,) = ax.plot(time, cal(len(time), init_min_salary, init_ratio), lw=2)
+(line,) = ax.plot(time, cal(len(time), init_min_salary, init_ratio, init_val), lw=2)
 ax.set_xlabel("ith Year")
 plt.xlim([0, 40])
 plt.ylim([0, 20000])
@@ -307,14 +308,26 @@ plt.grid()
 fig.subplots_adjust(left=0.25, bottom=0.25)
 
 # Make a horizontal slider to control the min_salary.
-axsalary = fig.add_axes([0.25, 0.1, 0.65, 0.03])
+axsalary = fig.add_axes([0.25, 0.075, 0.65, 0.03])
 salary_slider = Slider(
     ax=axsalary,
     label="min_salary (w)",
-    valmin=50,
+    valmin=0,
     valmax=300,
     valstep=5,
     valinit=init_min_salary,
+)
+
+# Make a vertically oriented slider to control the ratio
+axinitval = fig.add_axes([0.25, 0.12, 0.65, 0.03])
+init_val_slider = Slider(
+    ax=axinitval,
+    label="init val (w)",
+    valmin=0,
+    valmax=5000,
+    valstep=10,
+    valinit=init_val,
+    orientation="horizontal",
 )
 
 # Make a vertically oriented slider to control the ratio
@@ -332,13 +345,16 @@ ratio_slider = Slider(
 
 # The function to be called anytime a slider's value changes
 def update(val):
-    line.set_ydata(cal(len(time), salary_slider.val, ratio_slider.val / 100))
+    line.set_ydata(
+        cal(len(time), salary_slider.val, ratio_slider.val / 100, init_val_slider.val)
+    )
     fig.canvas.draw_idle()
 
 
 # register the update function with each slider
 salary_slider.on_changed(update)
 ratio_slider.on_changed(update)
+init_val_slider.on_changed(update)
 
 # Create a `matplotlib.widgets.Button` to reset the sliders to initial values.
 resetax = fig.add_axes([0.8, 0.025, 0.1, 0.04])
@@ -347,7 +363,8 @@ button = Button(resetax, "Reset", hovercolor="0.975")
 
 def reset(event):
     ratio_slider.reset()
-    ratio_slider.reset()
+    salary_slider.reset()
+    init_val_slider.reset()
 
 
 button.on_clicked(reset)
